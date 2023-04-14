@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Incomes and Expenses (Local Storage)</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.11.3/datatables.min.css" />
+    <link rel="stylesheet" type="text/css"
+        href="https://cdn.datatables.net/buttons/2.0.0/css/buttons.dataTables.min.css" />
+    <link rel="stylesheet" type="text/css"
+        href="https://cdn.datatables.net/colreorder/1.5.4/css/colReorder.dataTables.min.css" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/v/dt/dt-1.11.3/datatables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.0.0/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.0.0/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.0.0/js/buttons.print.min.js"></script>
+    <script src="https://cdn.datatables.net/colreorder/1.5.4/js/dataTables.colReorder.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background-color: #ccc;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ccc;
+        }
+
+        th {
+            text-align: center;
+        }
+
+        .btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+        }
+
+        .btn-primary:hover {
+            background-color: #0062cc;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        input[type="date"] {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            margin-bottom: 20px;
+            appearance: none;
+            /* remove default appearance */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-color: #fff;
+            /* set custom background color */
+            color: #444;
+            /* set custom text color */
+        }
+
+
+        input[type="text"],
+        input[type="number"] {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        input[type="submit"] {
+            padding: 10px;
+            border: none;
+            border-radius: 3px;
+            background-color: #7ab6f7;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #0062cc;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Incomes and Expenses</h1>
+        <table id="incomes-expenses" class="display responsive nowrap" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Amount (Rp)</th>
+                    <th>Edit</th>
+                    <th>Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="3" style="text-align:right">Total:</th>
+                    <th></th>
+                </tr>
+            </tfoot>
+        </table>
+        <br>
+        <form>
+            <label for="date">Date:</label>
+            <input type="date" id="date" name="date" required>
+            <br>
+            <label for="category">Category:</label>
+            <input type="text" id="category" name="category" required>
+            <br>
+            <label for="description">Description:</label>
+            <input type="text" id="description" name="description" required>
+            <br>
+            <label for="amount">Amount (Rp):</label>
+            <input type="number" id="amount" name="amount" step="0.01" required>
+            <br>
+            <input type="submit" id="update" value="Update" style="display: none;">
+            <input type="submit" id="entry" value="Add Entry" style="display: block;">
+        </form>
+    </div>
+    <script>
+        // Initialize DataTable
+        $(document).ready(function () {
+            var table = $('#incomes-expenses').DataTable({
+                // Enable responsive design
+                responsive: true,
+                // Enable column reordering
+                colReorder: true,
+                // Add buttons to export data
+                buttons: [
+                    'copyHtml5',
+                    'excelHtml5',
+                    'pdfHtml5',
+                    'print'
+                ],
+                // Calculate the total of the amount column
+                "footerCallback": function (row, data, start, end, display) {
+                    var api = this.api(), data;
+
+
+                    // Remove formatting to get integer data for summation
+                    var intVal = function (i) {
+                        return typeof i === 'string' ?
+                            i.replace(/[Rp\.]/g, '').replace(',', '.') * 1 :
+                            typeof i === 'number' ?
+                                i : 0;
+                    };
+
+                    // Total over all pages
+                    total = api
+                        .column(3)
+                        .data()
+                        .reduce(function (a, b) {
+                            return intVal(a) + intVal(b);
+                        }, 0);
+                    console.log(total)
+
+                    // Update footer
+                    $(api.column(3).footer()).html(
+                        'Rp ' + total.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')
+                    );
+                }
+            });
+
+            // Load data from LocalStorage
+            var data = JSON.parse(localStorage.getItem('incomes-expenses'));
+            if (data) {
+                table.rows.add(data).draw();
+            }
+
+            // Delete row on button click
+            $('#incomes-expenses tbody').on('click', '.delete-row', function () {
+                var row = $(this).closest('tr');
+                table.row(row).remove().draw();
+                console.log('deleted')
+
+                // Save data to LocalStorage
+                var data = table.rows().data().toArray();
+                localStorage.setItem('incomes-expenses', JSON.stringify(data));
+            });
+
+            // Edit row on button click
+            $('#incomes-expenses tbody').on('click', '.edit-row', function () {
+                var row = $(this).closest('tr');
+                var rowData = table.row(row).data();
+                $('#date').val(rowData[0]);
+                $('#category').val(rowData[1]);
+                $('#description').val(rowData[2]);
+                $('#amount').val(rowData[3]);
+                console.log('edit')
+            });
+
+            // Add row on form submit
+            $('form').submit(function (event) {
+                event.preventDefault();
+
+                var date = $('#date').val();
+                var category = $('#category').val();
+                var description = $('#description').val();
+                var amount = $('#amount').val();
+
+                // Add row to table
+                table.row.add([date, category, description, amount,
+                    '<button type="button" class="btn btn-primary edit-row">Edit</button>', 
+                    '<button type="button" class="btn btn-danger btn-sm delete-row">Delete</button>']).draw();
+
+                // Save data to LocalStorage
+                var data = table.rows().data().toArray();
+                localStorage.setItem('incomes-expenses', JSON.stringify(data));
+
+                // Reset form
+                $('form')[0].reset();
+            });
+
+        });
+    </script>
+</body>
